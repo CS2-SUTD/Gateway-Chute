@@ -12,6 +12,10 @@ class Camera:
     def __init__(self, source):
         self.cap = cv2.VideoCapture(source)
         self.q = queue.Queue()
+        self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.fps = self.cap.get(cv2.CAP_PROP_FPS)
+        self.fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         t = threading.Thread(target=self._reader)
         t.daemon = True
         t.start()
