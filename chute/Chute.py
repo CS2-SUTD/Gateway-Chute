@@ -75,13 +75,11 @@ class Chute:
                 frame, bbox_xyxy, class_ids, class_names=self.class_names
             )
 
-            cv2.imshow("Live Video", frame)
+            # cv2.imshow("Live Video", frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
-            try:
-                self._send_frame(frame)
-            except:
-                logger.info("Unable to send frame to server")
+            self._send_frame(frame)
+            # logger.info("Unable to send frame to server")
 
             if not self.recording and not self.recorded and self.open:
                 self.box_info = bb_info(bbox_xyxy, 0)
@@ -90,7 +88,14 @@ class Chute:
 
             if self.recording:
                 self.frame_buffer.append(frame)
-                self._record_irresponsible()
+                if not self.recorded:
+                    self._record_irresponsible()
+
+            if self.recorded and not self.open:
+                logger.info(
+                    f"Chute that has been opened for a long time has finally closed at {time.time() - self.time_to_stop + 40}"
+                )
+                self.recorded = False
 
     def _record_irresponsible(self):
         """
@@ -98,33 +103,22 @@ class Chute:
         and executes the appropriate actions
         """
 
-        if not self.recorded:
-            if self.open:
-                if not self.is_stopping:
-                    self.time_to_stop = time.time() + 40
-                    self.is_stopping = True
-                else:
-                    if time.time() > self.time_to_stop:
-                        try:
-                            self._upload_evidence()
-                        except:
-                            logger.info("undable to connect to server")
-                        self.recorded = True
-                        self.recording = False
-                        self.is_stopping = False
-                        self.frame_buffer = []
-
+        if self.open:
+            if not self.is_stopping:
+                self.time_to_stop = time.time() + 10
+                self.is_stopping = True
             else:
-                logger.info(f"Chute has closed at {time.time()}")
-                self.is_stopping = False
-                self.frame_buffer = []
-                self.recording = False
+                if time.time() > self.time_to_stop:
+                    self._upload_evidence()
+                    self.recorded = True
+                    self.recording = False
+                    self.is_stopping = False
+                    self.frame_buffer = []
         else:
-            if not self.open:
-                logger.info(
-                    f"Chute that has been opened for a long time has finally closed at {time.time() - self.time_to_stop + 40}"
-                )
-                self.recorded = False
+            logger.info(f"Chute has closed at {get_string_time()}")
+            self.is_stopping = False
+            self.frame_buffer = []
+            self.recording = False
 
     def _send_frame(self, frame: np.ndarray):
         """
@@ -136,7 +130,7 @@ class Chute:
         ret, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 8])
         x_as_bytes = pickle.dumps(buffer)
         self.socket.sendto(
-            (x_as_bytes), (self.socket_cfg["ip"], self.socket_cfg["port"])
+            (x_as_bytes), (self.socket_cfg["ip"], int(self.socket_cfg["port"]))
         )
 
     def _upload_evidence(self):
@@ -187,7 +181,7 @@ class Chute:
         message_json = json.dumps(message_dict)
         client = mqtt.Client()
         try:
-            client.connect(self.mqtt_cfg["ip"], self.mqtt_cfg["port"], 60)
+            client.connect(self.mqtt_cfg["ip"], int(self.mqtt_cfg["port"]), 60)
             client.loop_start()
             client.publish(
                 self.mqtt_cfg["topic"], message_json, qos=0

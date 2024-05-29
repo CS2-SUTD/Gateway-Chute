@@ -135,7 +135,7 @@ class Detector:
         output[:, :4] = self._scale_boxes(
             self.input_shape, output[:, :4], original_image.shape[:2]
         )
-
+        # TODO: send only highest probability
         return output[:1, :4], output[:1, 4], output[:1, 5]
 
     def _xywh2xyxy(self, x):
