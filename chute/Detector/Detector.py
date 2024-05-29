@@ -136,7 +136,7 @@ class Detector:
             self.input_shape, output[:, :4], original_image.shape[:2]
         )
 
-        return output[:, :4], output[:, 4], output[:, 5]
+        return output[:1, :4], output[:1, 4], output[:1, 5]
 
     def _xywh2xyxy(self, x):
         """
