@@ -30,7 +30,7 @@ python main.py
 
 - Video source can be configured in `main.py` as an argument for the `run` method of the `Chute` object
 
-- Other configurations can be made using the config.ini file. Alternatively, a copy of the config.ini file can be made and its path should be specified in the initialisation of the `Chute` class in `main.py`
+- Other configurations can be made using the `config.ini` file. Alternatively, a copy of the `config.ini` file can be made and its path should be specified in the initialisation of the `Chute` class in `main.py`
 
 ## How it works
 
