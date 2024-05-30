@@ -25,4 +25,9 @@ class MqttCfg(TypedDict):
     topic: str
 
 
+class GeneralCfg(TypedDict):
+    enable_server: str
+    chute_timeout: str
+
+
 BBxywh = Tuple[float, float, float, float]

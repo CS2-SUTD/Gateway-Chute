@@ -5,7 +5,6 @@ import json
 import os
 import ftplib
 import pickle
-from datetime import datetime, timezone, timedelta
 from typing import List
 
 import cv2
@@ -32,12 +31,15 @@ class Chute:
     def __init__(self, config_path: str = "chute/config.ini"):
         self.config_path: str = config_path
         det_cfg: DetCfg = self._get_config("detector")
+        general_cfg: GeneralCfg = self._get_config("general")
         self.socket_cfg: SocketCfg = self._get_config("socket")
         self.ftp_cfg: FtpCfg = self._get_config("ftp")
         self.mqtt_cfg: MqttCfg = self._get_config("mqtt")
         self.class_names: List[str] = det_cfg["class_names"].split(",")
         self.detector = Detector(**det_cfg)
         self.open: bool = False
+        self.server_enabled: bool = bool(int(general_cfg["enable_server"]))
+        self.chute_timeout: int = int(general_cfg["chute_timeout"])
         self.socket = self._get_socket()
 
     def start(self, stream_url: str):
@@ -75,11 +77,12 @@ class Chute:
                 frame, bbox_xyxy, class_ids, class_names=self.class_names
             )
 
-            # cv2.imshow("Live Video", frame)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
-            self._send_frame(frame)
-            # logger.info("Unable to send frame to server")
+            if self.server_enabled:
+                self._send_frame(frame)
+            else:
+                cv2.imshow("Live Video", frame)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
 
             if not self.recording and not self.recorded and self.open:
                 self.box_info = bb_info(bbox_xyxy, 0)
@@ -105,7 +108,7 @@ class Chute:
 
         if self.open:
             if not self.is_stopping:
-                self.time_to_stop = time.time() + 10
+                self.time_to_stop = time.time() + self.chute_timeout + 2
                 self.is_stopping = True
             else:
                 if time.time() > self.time_to_stop:
@@ -140,15 +143,12 @@ class Chute:
         - send message of detected open chute for prolonged period
         """
 
-        # now = datetime.now()
-        current_time = datetime.now(tz=timezone(timedelta(hours=8)))
-        time_iso = current_time.isoformat()  # ISO 8601 string
-        timestamp = current_time.strftime("%Y-%m-%d_%H%M%S")
-        # timestamp = f'{str(now.date())}_{str(now.hour)}{str(now.minute)}{str(now.second)}'
-        path = f"{timestamp}.mp4"
-        logger.info(f"Recording the evidence video {path}")
+        path = f"{get_string_time()}.mp4"
+        logger.info(f"Prolonged opening of chute detected")
+        os.makedirs("data/evidence", exist_ok=True)
+        evidence_path = f"data/evidence/{path}"
         output = cv2.VideoWriter(
-            path, self.cam.fourcc, 12, (self.cam.width, self.cam.height)
+            evidence_path, self.cam.fourcc, 12, (self.cam.width, self.cam.height)
         )
         for frame in self.frame_buffer:
             output.write(frame)
@@ -156,8 +156,10 @@ class Chute:
             if k == ord("q"):
                 break
         output.release()
-        self._send_video(path)
-        self._send_message(time_iso, path, self.box_info)
+        logger.info(f"Evidence recorded and stored in ")
+        if self.server_enabled:
+            self._send_video(path)
+            self._send_message(get_iso_time(), path, self.box_info)
 
     def _send_message(self, time_iso: str, path: str, Box_info: BBxywh):
         """

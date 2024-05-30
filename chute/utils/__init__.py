@@ -12,5 +12,6 @@ __all__ = [
     "FtpCfg",
     "SocketCfg",
     "MqttCfg",
+    "GeneralCfg",
     "BBxywh",
 ]
