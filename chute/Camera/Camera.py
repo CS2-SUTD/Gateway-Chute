@@ -18,6 +18,7 @@ class Camera:
         if str(source).split(".")[-1] in ["mp4", "avi"]:
             self.video_type = "local"
         else:
+            self.video_type = "stream"
             self.q = queue.Queue()
             t = threading.Thread(target=self._reader)
             t.daemon = True

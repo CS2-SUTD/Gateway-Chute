@@ -6,7 +6,7 @@ def draw_boxes(img, bbox_xyxy, class_ids, class_names=None):
 
     for i, box in enumerate(bbox_xyxy):
 
-        color = (255, 0, 0) if (int(class_ids[i])) else (0, 255, 0)
+        color = (0, 0, 255) if (int(class_ids[i])) else (255, 0, 0)
 
         obj_name = class_names[int(class_ids[i])]
 
