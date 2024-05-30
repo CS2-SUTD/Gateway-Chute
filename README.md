@@ -47,6 +47,5 @@ Until the garbage chute is closed again, no more additional videos will be saved
 ## Model weights
 The model weights are located in the `./data` directory. Currently, the model utilizes the `best.tflite` weights, trained on 300 manually labeled images sourced from both the internet and real-life scenarios. Additionally, an alternative set of weights, `chute_detector_2.tflite`, is available. This set was trained on a larger dataset but exhibits slightly lower accuracy. To switch the model weights used in the pipeline, please update the detector weights in the `config.ini` file.
 
-## Model training
 
 
