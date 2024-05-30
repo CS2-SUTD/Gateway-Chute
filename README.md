@@ -45,4 +45,8 @@ The video clip from the time when the garbage was first opened will be saved, an
 Until the garbage chute is closed again, no more additional videos will be saved or uploaded to the server.
 
 ## Model weights
-Model weights can be found in `./data`. Currently the model is using `best.tflite` weights, but we have added another set of weights, `chute_detector_2.tflite` that were trained with bigger dataset, but suffers from slightly lower accuracy. 
+Model weights can be found in `./data`. Currently the model is using `best.tflite` weights, but we have added another set of weights, `chute_detector_2.tflite` that were trained with bigger dataset, but suffers from slightly lower accuracy. To change the model weights used in the pipeline, update the detector weights in `config.ini`.
+
+## Model training
+
+
