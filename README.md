@@ -8,7 +8,7 @@ Online demonstration can be found [here](http://cs2.sg:5000/garbagechute/)
 
 ## Getting Started
 
-This program has been tested in Linux with python 3.10
+This program has been tested in a Linux environment with python 3.10
 
 ### Installation and Usage
 
