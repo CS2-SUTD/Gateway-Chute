@@ -43,3 +43,6 @@ When the garbage chute is detected to be open, a counter will start and after a 
 The video clip from the time when the garbage was first opened will be saved, and uploaded to the server via FTP. A message will also be sent to the MQTT broker.
 
 Until the garbage chute is closed again, no more additional videos will be saved or uploaded to the server.
+
+## Model weights
+Model weights can be found in `./data`. Currently the model is using `best.tflite` weights, but we have added another set of weights, `chute_detector_2.tflite` that were trained with bigger dataset, but suffers from slightly lower accuracy. 
