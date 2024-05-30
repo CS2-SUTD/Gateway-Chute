@@ -15,9 +15,13 @@ class Detector:
     """
 
     def __init__(self, **kwargs):
-        interpreter = tflite.Interpreter(
-            kwargs["weights"], num_threads=multiprocessing.cpu_count()
+        num_threads = (
+            multiprocessing.cpu_count()
+            if not bool(int(kwargs["cpu_cores"]))
+            else int(kwargs["cpu_cores"])
         )
+
+        interpreter = tflite.Interpreter(kwargs["weights"], num_threads=num_threads)
 
         self.input_shape = kwargs["input_shape"].split(",")
         self.input_shape = tuple([int(i) for i in self.input_shape])

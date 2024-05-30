@@ -5,6 +5,7 @@ class DetCfg(TypedDict):
     weights: str
     input_shape: str
     class_names: str
+    cpu_cores: str
 
 
 class FtpCfg(TypedDict):
