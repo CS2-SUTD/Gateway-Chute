@@ -45,7 +45,7 @@ The video clip from the time when the garbage was first opened will be saved, an
 Until the garbage chute is closed again, no more additional videos will be saved or uploaded to the server.
 
 ## Model weights
-The model weights are located in the `./data` directory. The models were both trained on YOLOV8 nano architecture. Currently, the model utilizes the `best.tflite` weights, trained on 300 manually labeled images sourced from both the internet and real-life scenarios. Additionally, an alternative set of weights, `chute_detector_2.tflite`, is available. This set was trained on a larger dataset but exhibits slightly lower accuracy. To switch the model weights used in the pipeline, please update the detector weights in the `config.ini` file.
+The model weights are located in the `./data` directory. The models were both trained on YOLOV8 nano architecture. Currently, the model utilizes the `best.tflite` weights. We are currently working on another set of weights that are trained on a larger dataset. To switch the model weights used in the pipeline, please update the detector weights in the `config.ini` file.
 
 
 
