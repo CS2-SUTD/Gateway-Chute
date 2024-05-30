@@ -1,4 +1,7 @@
 venv/
 __pycache__/
-data/result.mp4
+data/*.mp4
+!data/sample.mp4
 data/evidence/
+data/*.tflite
+!data/best.tflite
