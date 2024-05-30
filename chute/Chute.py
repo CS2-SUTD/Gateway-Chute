@@ -156,7 +156,7 @@ class Chute:
             if k == ord("q"):
                 break
         output.release()
-        logger.info(f"Evidence recorded and stored in ")
+        logger.info(f"Evidence recorded and stored in {evidence_path}")
         if self.server_enabled:
             self._send_video(path)
             self._send_message(get_iso_time(), path, self.box_info)
