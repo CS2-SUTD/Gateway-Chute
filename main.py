@@ -1,4 +1,4 @@
 from chute import Chute
 
 chute = Chute()
-chute.start(0)
+chute.start("data/sample.mp4")

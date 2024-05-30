@@ -11,14 +11,17 @@ class Camera:
 
     def __init__(self, source):
         self.cap = cv2.VideoCapture(source)
-        self.q = queue.Queue()
         self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        t = threading.Thread(target=self._reader)
-        t.daemon = True
-        t.start()
+        if str(source).split(".")[-1] in ["mp4", "avi"]:
+            self.video_type = "local"
+        else:
+            self.q = queue.Queue()
+            t = threading.Thread(target=self._reader)
+            t.daemon = True
+            t.start()
 
     # read frames as soon as they are available, keeping only most recent one
     def _reader(self):
@@ -35,7 +38,10 @@ class Camera:
 
     def read(self):
         """return latest frame from camera"""
-        return self.q.get()
+        if self.video_type == "local":
+            return self.cap.read()[1]
+        else:
+            return self.q.get()
 
 
 if __name__ == "__main__":

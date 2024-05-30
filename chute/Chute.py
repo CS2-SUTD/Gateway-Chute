@@ -42,9 +42,13 @@ class Chute:
         self.chute_timeout: int = int(general_cfg["chute_timeout"])
         self.socket = self._get_socket()
 
-    def start(self, stream_url: str):
+    def start(self, source: str):
         """
         Start Chute processing of a RTSP stream
+
+        Note: Source format supported are streams and capturing devices. Local
+        files can be used but algorithm to decide prolonged opening of chute
+        may not function properly
 
         Take in a RTSP stream, and continually within each cycle, catches
         the latest frame and runs the model on each frame. Pass the anotated
@@ -55,15 +59,14 @@ class Chute:
         closed again.
 
         Args:
-            stream_url (str): RTSP url
+            source (str | int): RTSP url, capturing device id, *.mp4, *.avi
         """
 
         self.recording = False
         self.recorded = False
         self.frame_buffer = []
         self.is_stopping = False
-
-        self.cam = Camera(stream_url)
+        self.cam = Camera(source)
 
         while True:
             frame = self.cam.read()
