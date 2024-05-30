@@ -28,7 +28,7 @@ class Chute:
         config_path (str): path to ini file with configurations of Chute
     """
 
-    def __init__(self, config_path: str = "chute/config.ini"):
+    def __init__(self, config_path: str = "config.ini"):
         self.config_path: str = config_path
         det_cfg: DetCfg = self._get_config("detector")
         general_cfg: GeneralCfg = self._get_config("general")
