@@ -36,7 +36,7 @@ python main.py
 
 The program pulls the stream from the stream source and processes it frame by frame. The processed frame is then sent via sockets to the server for a visualisation of the live stream.
 
-The program uses the provided detection model (only supports YOLOv8 models in tflite format) to detect opened and closed garbage chutes.
+The program uses the provided detection model to detect opened and closed garbage chutes.
 
 When the garbage chute is detected to be open, a counter will start and after a (configurable) set amount of time, the prolonged opening of the garbage chute will be registered.
 
