@@ -87,20 +87,24 @@ class Chute:
                 cv2.imshow("Live Video", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
-
+            
+            # When the chute first opens, start the recording to see if it's a prolonged opening
             if not self.recording and not self.recorded and self.open:
                 self.box_info = bb_info(bbox_xyxy, 0)
-                logger.info(f"Chute opened at {get_string_time()}")
+                logger.info(f"Chute opened at {get_logging_time()}")
                 self.recording = True
 
+            # start picking up the frames for evidence in case it is a prolonged opening
             if self.recording:
                 self.frame_buffer.append(frame)
                 if not self.recorded:
                     self._record_irresponsible()
 
+            # if opened for more than 'chute_timeout' duration already and finally closes, have this so that can start checking for prolonged opening if it opens again
+            # this is more for the case in which the chute is open for longer than 'chute_timeout', in which case should continue recording
             if self.recorded and not self.open:
                 logger.info(
-                    f"Chute that has been opened for a long time has finally closed at {time.time() - self.time_to_stop + 40}"
+                    f"Chute that has been opened for a long time has finally closed at {get_logging_time()}"
                 )
                 self.recorded = False
 
@@ -111,10 +115,12 @@ class Chute:
         """
 
         if self.open:
+            # just opened, so get the time which if the chute were to be opened up till then, then register a prolonged opening and upload the video evidence
             if not self.is_stopping:
                 self.time_to_stop = time.time() + self.chute_timeout + 2
                 self.is_stopping = True
             else:
+                # register the prolonged opening and upload the evidence
                 if time.time() > self.time_to_stop:
                     frames_to_upload= self.frame_buffer
                     t1 = threading.Thread(target=self._upload_evidence,args=(frames_to_upload,))
@@ -123,8 +129,9 @@ class Chute:
                     self.recording = False
                     self.is_stopping = False
                     self.frame_buffer = []
+        # if close before the time to upload evidence, then reset system
         else:
-            logger.info(f"Chute has closed at {get_string_time()}")
+            logger.info(f"Chute has closed at {get_logging_time()}")
             self.is_stopping = False
             self.frame_buffer = []
             self.recording = False
