@@ -5,6 +5,7 @@ import json
 import os
 import ftplib
 import pickle
+import threading
 from typing import List
 
 import cv2
@@ -115,7 +116,9 @@ class Chute:
                 self.is_stopping = True
             else:
                 if time.time() > self.time_to_stop:
-                    self._upload_evidence()
+                    frames_to_upload= self.frame_buffer
+                    t1 = threading.Thread(target=self._upload_evidence,args=(frames_to_upload,))
+                    t1.start()
                     self.recorded = True
                     self.recording = False
                     self.is_stopping = False
@@ -139,7 +142,7 @@ class Chute:
             (x_as_bytes), (self.socket_cfg["ip"], int(self.socket_cfg["port"]))
         )
 
-    def _upload_evidence(self):
+    def _upload_evidence(self, frame_buffer):
         """
         Upload evidence
         - send video evidence
@@ -153,7 +156,7 @@ class Chute:
         output = cv2.VideoWriter(
             evidence_path, self.cam.fourcc, 12, (self.cam.width, self.cam.height)
         )
-        for frame in self.frame_buffer:
+        for frame in frame_buffer:
             output.write(frame)
             k = cv2.waitKey(24)
             if k == ord("q"):
