@@ -36,9 +36,9 @@ class Chute:
         self.socket_cfg: SocketCfg = self._get_config("socket")
         self.ftp_cfg: FtpCfg = self._get_config("ftp")
         self.mqtt_cfg: MqttCfg = self._get_config("mqtt")
-        self.class_names: List[str] = det_cfg["class_names"].split(",")
+        self.CLASS_NAMES: List[str] = det_cfg["class_names"].split(",")
         self.detector = Detector(**det_cfg)
-        self.open: bool = False
+        self.open: int = 0
         self.cam_id: str = general_cfg["cam_id"]
         self.server_enabled: bool = bool(int(general_cfg["enable_server"]))
         self.chute_timeout: int = int(general_cfg["chute_timeout"])
@@ -76,12 +76,12 @@ class Chute:
             try:
                 if class_ids[0] == False and scores[0] < 0.80:
                     class_ids[0] = self.open
-                self.open = class_ids[0]
+                self.open = int(class_ids[0])
             except:
                 pass
 
             frame = draw_boxes(
-                frame, bbox_xyxy, class_ids, class_names=self.class_names
+                frame, bbox_xyxy, class_ids, class_names=self.CLASS_NAMES
             )
 
             if self.server_enabled:
@@ -90,10 +90,13 @@ class Chute:
                 cv2.imshow(f"Live Video: {self.cam_id}", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
+            try:
+                self.box_info = bb_info(bbox_xyxy, 0)
+            except:
+                pass
 
             # When the chute first opens, start the recording to see if it's a prolonged opening
             if not self.recording and not self.recorded and self.open:
-                self.box_info = bb_info(bbox_xyxy, 0)
                 logger.info(f"Chute opened at {get_logging_time()}")
                 self.recording = True
 
@@ -125,14 +128,17 @@ class Chute:
             else:
                 # register the prolonged opening and upload the evidence
                 if time.time() > self.time_to_stop:
-                    frames_to_upload = self.frame_buffer
                     if self.server_enabled:
+                        logger.info(self.open)
                         t1 = threading.Thread(
-                            target=self._upload_evidence, args=(frames_to_upload,)
+                            target=self._upload_evidence,
+                            args=(self.frame_buffer, self.box_info, self.open),
                         )
                         t1.start()
                     else:
-                        self._upload_evidence(frames_to_upload)
+                        self._upload_evidence(
+                            self.frame_buffer, self.box_info, self.open
+                        )
                     self.recorded = True
                     self.recording = False
                     self.is_stopping = False
@@ -157,17 +163,16 @@ class Chute:
             (x_as_bytes), (self.socket_cfg["ip"], int(self.socket_cfg["port"]))
         )
 
-    def _upload_evidence(self, frame_buffer):
+    def _upload_evidence(self, frame_buffer, box_info: BBxywh, state: int):
         """
         Upload evidence
         - send video evidence
         - send message of detected open chute for prolonged period
         """
 
-        path = f"{get_string_time()}.mp4"
         logger.info(f"Prolonged opening of chute detected")
         os.makedirs("data/evidence", exist_ok=True)
-        evidence_path = f"data/evidence/{path}"
+        evidence_path = f"data/evidence/{get_string_time()}.mp4"
         output = cv2.VideoWriter(
             evidence_path, self.cam.fourcc, 12, (self.cam.width, self.cam.height)
         )
@@ -179,14 +184,14 @@ class Chute:
         output.release()
         logger.info(f"Evidence recorded and stored in {evidence_path}")
         if self.server_enabled:
-            self._send_video(path)
-            self._send_message(get_iso_time(), path, self.box_info)
+            self._send_video(evidence_path)
+            self._send_message(get_iso_time(), evidence_path, box_info, state)
 
-    def _send_message(self, time_iso: str, path: str, Box_info: BBxywh):
+    def _send_message(self, time_iso: str, path: str, Box_info: BBxywh, state: int):
         """
         Send message regarding chute not closed for prolonged period to mqtt broker
         """
-
+        path = os.path.basename(path)
         message_dict = {
             "Id": path,
             "VideoSource": {
@@ -198,7 +203,7 @@ class Chute:
             "Image": "Lab camera",
             "Video": "Lab camera",
             "Category": "VA",
-            "Metadata": {"State": "Open", "Box": Box_info},
+            "Metadata": {"State": self.CLASS_NAMES[state], "Box": Box_info},
         }
 
         message_json = json.dumps(message_dict)
@@ -221,7 +226,6 @@ class Chute:
         """
         Send video evidence to backend via ftp
         """
-
         filename = os.path.basename(video_path)
         cfg: FtpCfg = self._get_config("ftp")
 
