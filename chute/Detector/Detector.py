@@ -169,10 +169,7 @@ class Detector:
         boxes (torch.Tensor): the bounding boxes to clip
         shape (tuple): the shape of the image
         """
-        boxes[..., [0, 2]] = boxes[..., [0, 2]].clip(0, sh                    t1 = threading.Thread(
-                        target=self._upload_evidence, args=(frames_to_upload,)
-                    )
-                    t1.start()ape[1])  # x1, x2
+        boxes[..., [0, 2]] = boxes[..., [0, 2]].clip(0, shape[1])  # x1, x2
         boxes[..., [1, 3]] = boxes[..., [1, 3]].clip(0, shape[0])  # y1, y2
 
     def _scale_boxes(self, img1_shape, boxes, img0_shape, ratio_pad=None):

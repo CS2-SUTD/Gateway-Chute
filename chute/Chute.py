@@ -81,7 +81,7 @@ class Chute:
                 pass
 
             frame = draw_boxes(
-                frame, bbox_xyxy, class_ids, scores, class_names=self.class_names
+                frame, bbox_xyxy, class_ids, class_names=self.class_names
             )
 
             if self.server_enabled:
