@@ -15,7 +15,7 @@ class Camera:
         self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        if str(source).split(".")[-1] in ["mp4", "avi"]:
+        if str(source).split(".")[-1] in ["mp4", "avi", "MOV"]:
             self.video_type = "local"
         else:
             self.video_type = "stream"

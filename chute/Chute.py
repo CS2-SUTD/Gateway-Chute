@@ -39,6 +39,7 @@ class Chute:
         self.class_names: List[str] = det_cfg["class_names"].split(",")
         self.detector = Detector(**det_cfg)
         self.open: bool = False
+        self.cam_id: str = general_cfg["cam_id"]
         self.server_enabled: bool = bool(int(general_cfg["enable_server"]))
         self.chute_timeout: int = int(general_cfg["chute_timeout"])
         self.socket = self._get_socket()
@@ -73,21 +74,23 @@ class Chute:
             frame = self.cam.read()
             bbox_xyxy, scores, class_ids = self.detector.detect(frame)
             try:
+                if class_ids[0] == False and scores[0] < 0.80:
+                    class_ids[0] = self.open
                 self.open = class_ids[0]
             except:
                 pass
 
             frame = draw_boxes(
-                frame, bbox_xyxy, class_ids, class_names=self.class_names
+                frame, bbox_xyxy, class_ids, scores, class_names=self.class_names
             )
 
             if self.server_enabled:
                 self._send_frame(frame)
             else:
-                cv2.imshow("Live Video", frame)
+                cv2.imshow(f"Live Video: {self.cam_id}", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
-            
+
             # When the chute first opens, start the recording to see if it's a prolonged opening
             if not self.recording and not self.recorded and self.open:
                 self.box_info = bb_info(bbox_xyxy, 0)
@@ -122,9 +125,14 @@ class Chute:
             else:
                 # register the prolonged opening and upload the evidence
                 if time.time() > self.time_to_stop:
-                    frames_to_upload= self.frame_buffer
-                    t1 = threading.Thread(target=self._upload_evidence,args=(frames_to_upload,))
-                    t1.start()
+                    frames_to_upload = self.frame_buffer
+                    if self.server_enabled:
+                        t1 = threading.Thread(
+                            target=self._upload_evidence, args=(frames_to_upload,)
+                        )
+                        t1.start()
+                    else:
+                        self._upload_evidence(frames_to_upload)
                     self.recorded = True
                     self.recording = False
                     self.is_stopping = False

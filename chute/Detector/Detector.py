@@ -3,6 +3,7 @@ import tflite_runtime.interpreter as tflite
 import numpy as np
 from chute.Detector.Letterbox import LetterBox
 import cv2
+from loguru import logger
 
 
 class Detector:
@@ -33,7 +34,7 @@ class Detector:
     def detect(
         self,
         image: np.ndarray,
-        conf_thres: float = 0.25,
+        conf_thres: float = 0.05,
         iou_thres: float = 0.45,
         max_det: int = 1,
     ) -> list:
@@ -42,8 +43,8 @@ class Detector:
 
         Args:
             image (np.ndarray): image to be processed
-            conf_thresh (float): confidence threshold
-            iou_thresh (float): iout threshold
+            conf_thres (float): confidence threshold
+            iou_thres (float): iout threshold
             max_det (int): number of top detections to be included in output
 
         Returns:
@@ -168,7 +169,10 @@ class Detector:
         boxes (torch.Tensor): the bounding boxes to clip
         shape (tuple): the shape of the image
         """
-        boxes[..., [0, 2]] = boxes[..., [0, 2]].clip(0, shape[1])  # x1, x2
+        boxes[..., [0, 2]] = boxes[..., [0, 2]].clip(0, sh                    t1 = threading.Thread(
+                        target=self._upload_evidence, args=(frames_to_upload,)
+                    )
+                    t1.start()ape[1])  # x1, x2
         boxes[..., [1, 3]] = boxes[..., [1, 3]].clip(0, shape[0])  # y1, y2
 
     def _scale_boxes(self, img1_shape, boxes, img0_shape, ratio_pad=None):

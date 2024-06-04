@@ -27,6 +27,7 @@ class MqttCfg(TypedDict):
 
 
 class GeneralCfg(TypedDict):
+    cam_id: str
     enable_server: str
     chute_timeout: str
 
