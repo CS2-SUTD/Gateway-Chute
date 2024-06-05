@@ -12,7 +12,7 @@ def draw_boxes(img, bbox_xyxy, class_ids, class_names=None):
 
         label = obj_name
 
-        draw_ui_box(box, img, label=label, color=color, line_thickness=2)
+        draw_ui_box(box, img, label=label, color=color, line_thickness=5)
 
     return img
 
