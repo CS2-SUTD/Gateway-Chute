@@ -38,7 +38,6 @@ class Chute:
         self.mqtt_cfg: MqttCfg = self._get_config("mqtt")
         self.CLASS_NAMES: List[str] = det_cfg["class_names"].split(",")
         self.detector = Detector(**det_cfg)
-        self.open: int = 0
         self.cam_id: str = general_cfg["cam_id"]
         self.server_enabled: bool = bool(int(general_cfg["enable_server"]))
         self.chute_timeout: int = int(general_cfg["chute_timeout"])
@@ -69,19 +68,22 @@ class Chute:
         self.frame_buffer = []
         self.is_stopping = False
         self.cam = Camera(source)
+        self.open: int = 0
+        self.bbox_xyxy: BBxywh = None
 
         while True:
             frame = self.cam.read()
             bbox_xyxy, scores, class_ids = self.detector.detect(frame)
             try:
-                if class_ids[0] == False and scores[0] < 0.80:
+                if class_ids[0] == False and scores[0] < 0.85:
                     class_ids[0] = self.open
                 self.open = int(class_ids[0])
+                self.bbox_xyxy = bbox_xyxy
             except:
                 pass
 
             frame = draw_boxes(
-                frame, bbox_xyxy, class_ids, class_names=self.CLASS_NAMES
+                frame, self.bbox_xyxy, [self.open], class_names=self.CLASS_NAMES
             )
 
             if self.server_enabled:
@@ -90,10 +92,6 @@ class Chute:
                 cv2.imshow(f"Live Video: {self.cam_id}", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
-            try:
-                self.box_info = bb_info(bbox_xyxy, 0)
-            except:
-                pass
 
             # When the chute first opens, start the recording to see if it's a prolonged opening
             if not self.recording and not self.recorded and self.open:
@@ -128,16 +126,17 @@ class Chute:
             else:
                 # register the prolonged opening and upload the evidence
                 if time.time() > self.time_to_stop:
+                    box_info = bb_info(self.bbox_xyxy, 0)
                     if self.server_enabled:
                         logger.info(self.open)
                         t1 = threading.Thread(
                             target=self._upload_evidence,
-                            args=(self.frame_buffer, self.box_info, self.open),
+                            args=(self.frame_buffer, box_info, self.open),
                         )
                         t1.start()
                     else:
                         self._upload_evidence(
-                            self.frame_buffer, self.box_info, self.open
+                            self.frame_buffer, box_info, self.open
                         )
                     self.recorded = True
                     self.recording = False
