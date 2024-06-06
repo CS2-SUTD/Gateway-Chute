@@ -1,5 +1,6 @@
 import multiprocessing
-import tflite_runtime.interpreter as tflite
+# import tensorflow as tflite # Use if non-linux
+import tflite_runtime.interpreter as tflite 
 import numpy as np
 from chute.Detector.Letterbox import LetterBox
 import cv2
@@ -23,6 +24,7 @@ class Detector:
         )
 
         interpreter = tflite.Interpreter(kwargs["weights"], num_threads=num_threads)
+        # interpreter = tf.lite.Interpreter(kwargs["weights"], num_threads=num_threads) # Use if non-linux
 
         self.input_shape = kwargs["input_shape"].split(",")
         self.input_shape = tuple([int(i) for i in self.input_shape])
