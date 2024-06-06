@@ -71,12 +71,15 @@ class Chute:
             frame = self.cam.read()
             bbox_xyxy, scores, class_ids = self.detector.detect(frame)
             try:
-                self.open = class_ids[0]  # if there is a BBOX drawn (ie, chute detected), then change self.open to class ID (0 for closed, 1 for open)
+                if class_ids[0] == False and scores[0] < 0.85:
+                    class_ids[0] = self.open
+                self.open = int(class_ids[0])
+                self.bbox_xyxy = bbox_xyxy
             except:
                 pass
 
             frame = draw_boxes(
-                frame, bbox_xyxy, class_ids, class_names=self.class_names
+                frame, bbox_xyxy, class_ids, class_names=self.CLASS_NAMES
             )
 
             if self.server_enabled:
@@ -92,7 +95,7 @@ class Chute:
                     self.time_to_stop = time.time() + self.chute_timeout + 2
                     self.frame_buffer.append(frame)
                     self.endtime_created = True
-                    logger.info(f"Chute has just been opened at {get_string_time()}")
+                    logger.info(f"Chute has just been opened at {get_logging_time()}")
 
                 # Chute has been left open for a very long time. 
                 # Short video of the first (chute_timeout) seconds of being open has already been uploaded, so don't create a new endtime, as we don't want to create a new recording. 
@@ -134,7 +137,7 @@ class Chute:
                     self.recorded = False
                     self.endtime_created = False
                     self.frame_buffer = []
-                    logger.info(f"Chute that has been opened for a long time has finally closed at {time.time() - self.time_to_stop + self.chute_timeout}")
+                    logger.info(f"Chute that has been opened for a long time has finally closed at {get_logging_time()}")
                 
                 # If chute is "still closed", that is, the previous frame was still that of a closed chute, then don't do anything.  
                 elif self.endtime_created == False and self.recorded == False:
@@ -145,7 +148,7 @@ class Chute:
                     if time.time() < self.time_to_stop:
                         self.frame_buffer = []
                         self.endtime_created = False
-                        logger.info(f"Chute has closed at {get_string_time()}")
+                        logger.info(f"Chute has closed at {get_logging_time()}")
 
   
     def _send_frame(self, frame: np.ndarray):
