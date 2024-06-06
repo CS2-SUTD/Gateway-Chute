@@ -194,7 +194,7 @@ class Chute:
         message_dict = {
             "Id": path,
             "VideoSource": {
-                "Name": "camera1",
+                "Name": f"camera {self.cam_id}",
                 "Type": "Network",
                 "URL": None,
             },
