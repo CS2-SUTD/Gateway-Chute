@@ -23,14 +23,16 @@ Note: tflite-runtime Python wheels are pre-built and provided only for Linux. Fo
 2. Run the command:
 
 ```
-python main.py
+python main.py [optional, -c config] [optional, -s source]
+
+eg. python main.py -c config.ini -s rtsp://0.0.0.0:0/stream
 ```
 
 ### Configuration
 
-- Video source can be configured in `main.py` as an argument for the `run` method of the `Chute` object
+- Video source can be specified as a CLI argument or configured in `main.py` as an argument for the `run` method of the `Chute` object
 
-- Other configurations can be made using the `config.ini` file. Alternatively, a copy of the `config.ini` file can be made and its path should be specified in the initialisation of the `Chute` class in `main.py`
+- Other configurations can be made using the `config.ini` file. Alternatively, a copy of the `config.ini` file can be made and its path should be specified either as a CLI argument or in the initialisation of the `Chute` class in `main.py`
 
 ## How it works
 
@@ -43,7 +45,3 @@ When the garbage chute is detected to be open, a counter will start and after a 
 The video clip from the time when the garbage was first opened will be saved, and uploaded to the server via FTP. A message will also be sent to the MQTT broker.
 
 Until the garbage chute is closed again, no more additional videos will be saved or uploaded to the server.
-
-
-
-

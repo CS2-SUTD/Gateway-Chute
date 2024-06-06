@@ -6,3 +6,6 @@ data/*.MOV
 data/evidence/
 data/*.tflite
 !data/best.tflite
+*.ini
+!config.ini
+config/
