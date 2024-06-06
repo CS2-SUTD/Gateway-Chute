@@ -103,7 +103,23 @@ class Chute:
                     # If chute was open and the duration of time it has been open has just exceeded chute_timeout, upload video evidence.  
                     if time.time() > self.time_to_stop and self.recorded == False:
                         self.frame_buffer.append(frame)
-                        self._upload_evidence()
+                        box_info = bb_info(self.bbox_xyxy, 0)
+                        
+                        # Start another thread for uploading video, if server is enabled.
+                        if self.server_enabled:
+                            logger.info(self.open)
+                            t1 = threading.Thread(
+                                target=self._upload_evidence,
+                                args=(self.frame_buffer, box_info, self.open),
+                            )
+                            t1.start()
+                            
+                        # Continue in same thread for uploading video, if server is not enabled.    
+                        else:
+                            self._upload_evidence(
+                                self.frame_buffer, box_info, self.open
+                            )
+                
                         self.recorded = True
                         self.endtime_created = False
                         self.frame_buffer = []
