@@ -61,7 +61,7 @@ class Detector:
         input_data = self._pre_process(image)
 
         # Run inference on image
-        output_data = self._run_inference(input_data)
+        output_data = self._run_inference(input_data, self.interpreter)
 
         # Process output data
         prediction, nc, nm, xc = self._process_output(output_data, conf_thres)
@@ -101,6 +101,7 @@ class Detector:
     def _run_inference(
             self,
             image: np.ndarray,
+            interpreter: tf.lite.Interpreter,
     ) -> np.ndarray:
         """
         Run inference on the image
@@ -112,9 +113,9 @@ class Detector:
         Returns:
             output_data (np.ndarray): output of the model
         """
-        self.interpreter.set_tensor(self.input_details[0]["index"], image)
-        self.interpreter.invoke()
-        output_data = self.interpreter.get_tensor(self.output_details[0]["index"])
+        interpreter.set_tensor(self.input_details[0]["index"], image)
+        interpreter.invoke()
+        output_data = interpreter.get_tensor(self.output_details[0]["index"])
         output_data[0][:4] *= self.input_shape[0]
 
         return output_data
