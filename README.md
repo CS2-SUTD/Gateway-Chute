@@ -28,6 +28,17 @@ python main.py [optional, -c config] [optional, -s source]
 eg. python main.py -c config.ini -s rtsp://0.0.0.0:0/stream
 ```
 
+#### Multi-stream setup
+1. Create the relevant config files for each stream (for organisation, keep them in a folder named `config`). Main changes to be made are:
+    - `cam_id`: should be unique
+    -  `cpu_cores`: should not be 0 when having multiple streams
+    - `socket port`: should be unique
+2. Edit `run.py` to create processes, each associated with one stream
+3. Run the command:
+```
+python run.py
+```
+
 ### Configuration
 
 - Video source can be specified as a CLI argument or configured in `main.py` as an argument for the `run` method of the `Chute` object
