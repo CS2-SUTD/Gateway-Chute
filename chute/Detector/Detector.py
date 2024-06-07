@@ -1,5 +1,5 @@
 import multiprocessing
-# import tensorflow as tflite # Use if non-linux
+# import tensorflow as tf # Use if non-linux
 import tflite_runtime.interpreter as tflite 
 import numpy as np
 from chute.Detector.Letterbox import LetterBox
@@ -56,26 +56,88 @@ class Detector:
         """
 
         original_image = image.copy()
+
+        # Preprocess input image
+        input_data = self._pre_process(image)
+
+        # Run inference on image
+        output_data = self._run_inference(input_data)
+
+        # Process output data
+        prediction, nc, nm, xc = self._process_output(output_data, conf_thres)
+
+        # Filter predictions
+        output = self._filter_predictions(prediction, xc, conf_thres, iou_thres, max_det, nm, nc)
+
+        # Scale boxes
+        output[:, :4] = self._scale_boxes(self.input_shape, output[:, :4], original_image.shape[:2])
+
+        # Send highest probability detection
+        return output[:1, :4], output[:1, 4], output[:1, 5]
+    
+    def _pre_process(self, image: np.ndarray) -> np.ndarray:
+        """
+        Preprocess the image
+
+        Args:
+            image (np.ndarray): image to be processed
+
+        Returns:
+            image (np.ndarray): preprocessed image
+        """
         im = [LetterBox()(image=image)]
 
         im = np.stack(im)
         im = im[..., ::-1].transpose(
             (0, 1, 2, 3)
-        )  # BGR to RGB, BHWC to BCHW, (n, 3, h, w)
+        )
 
-        im = np.ascontiguousarray(im)  # contiguous
+        im = np.ascontiguousarray(im)
         im = im.astype(np.float32)
         im /= 255
 
-        # Prepare the input tensor
-        input_data = im
-        self.interpreter.set_tensor(self.input_details[0]["index"], input_data)
+        return im
+    
+    def _run_inference(
+            self,
+            image: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Run inference on the image
 
-        # Run inference
+        Args:
+            image (np.ndarray): image to be processed
+            original_image (np.ndarray): original image
+
+        Returns:
+            output_data (np.ndarray): output of the model
+        """
+        self.interpreter.set_tensor(self.input_details[0]["index"], image)
         self.interpreter.invoke()
         output_data = self.interpreter.get_tensor(self.output_details[0]["index"])
-
         output_data[0][:4] *= self.input_shape[0]
+
+        return output_data
+    
+    def _process_output(
+            self,
+            output_data: np.ndarray,
+            conf_thres: float,
+    ) -> tuple:
+        """
+        Process the output of the model
+
+        Args:
+            output_data (np.ndarray): output of the model
+            conf_thres (float): confidence threshold
+
+        Returns:
+            prediction (np.ndarray): prediction of the model
+            output (np.ndarray): output of the model
+            nc (int): number of classes
+            nm (int): number of masks
+            xc (np.ndarray): candidates
+        """
 
         bs = output_data.shape[0]  # batch size
         nc = output_data.shape[1] - 4  # number of classes
@@ -89,11 +151,40 @@ class Detector:
         prediction = np.transpose(output_data, (0, -1, -2))
 
         prediction[..., :4] = self._xywh2xyxy(prediction[..., :4])
-        output = np.zeros((0, 6 + nm), dtype=np.float32)
 
+        return prediction, nc, nm, xc
+
+    def _filter_predictions(
+            self,
+            prediction: np.ndarray,
+            xc: np.ndarray,
+            conf_thres: float,
+            iou_thres: float,
+            max_det: int,
+            nm: int,
+            nc: int,
+    ) -> np.ndarray:
+        """
+        Filter the predictions
+
+        Args:
+            prediction (np.ndarray): prediction of the model
+            xc (np.ndarray): candidates
+            conf_thres (float): confidence threshold
+            iou_thres (float): iou threshold
+            max_det (int): max number of detections
+            nm (int): number of masks
+            nc (int): number of classes
+
+        Returns:
+            output (np.ndarray): output of the model
+        """
+        
         max_nms = 30000
         agnostic = False
         max_wh = 7680
+
+        output = np.zeros((0, 6 + nm), dtype=np.float32)
 
         for xi, x in enumerate(prediction):  # image index, image inference
             x = x[xc[xi]]  # confidence
@@ -139,11 +230,9 @@ class Detector:
 
             output = x[i]
 
-        output[:, :4] = self._scale_boxes(
-            self.input_shape, output[:, :4], original_image.shape[:2]
-        )
-        # TODO: send only highest probability
-        return output[:1, :4], output[:1, 4], output[:1, 5]
+        return output
+
+
 
     def _xywh2xyxy(self, x):
         """
