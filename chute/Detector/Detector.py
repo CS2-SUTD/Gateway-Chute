@@ -101,7 +101,7 @@ class Detector:
     def _run_inference(
             self,
             image: np.ndarray,
-            interpreter: tf.lite.Interpreter,
+            interpreter: tflite.Interpreter,
     ) -> np.ndarray:
         """
         Run inference on the image
