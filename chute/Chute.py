@@ -62,14 +62,10 @@ class Chute:
         Args:
             source (str | int): RTSP url, capturing device id, *.mp4, *.avi
         """
-
-        self.recording = False
         self.recorded = False
         self.frame_buffer = []
-        self.is_stopping = False
+        self.endtime_created = False
         self.cam = Camera(source)
-        self.open: int = 0
-        self.bbox_xyxy: BBxywh = None
 
         while True:
             frame = self.cam.read()
@@ -83,72 +79,78 @@ class Chute:
                 pass
 
             frame = draw_boxes(
-                frame, self.bbox_xyxy, [self.open], class_names=self.CLASS_NAMES
+                frame, bbox_xyxy, class_ids, class_names=self.CLASS_NAMES
             )
 
             if self.server_enabled:
                 self._send_frame(frame)
             else:
-                cv2.imshow(f"Live Video: {self.cam_id}", frame)
+                cv2.imshow("Live Video", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
-            # When the chute first opens, start the recording to see if it's a prolonged opening
-            if not self.recording and not self.recorded and self.open:
-                logger.info(f"Chute opened at {get_logging_time()}")
-                self.recording = True
+            if self.open:
+                # Chute has just been opened from being closed. Create an endtime.
+                if self.endtime_created == False and self.recorded == False: 
+                    self.time_to_stop = time.time() + self.chute_timeout + 2
+                    self.frame_buffer.append(frame)
+                    self.endtime_created = True
+                    logger.info(f"Chute has just been opened at {get_logging_time()}")
 
-            # start picking up the frames for evidence in case it is a prolonged opening
-            if self.recording:
-                self.frame_buffer.append(frame)
-                if not self.recorded:
-                    self._record_irresponsible()
+                # Chute has been left open for a very long time. 
+                # Short video of the first (chute_timeout) seconds of being open has already been uploaded, so don't create a new endtime, as we don't want to create a new recording. 
+                elif self.endtime_created == False and self.recorded == True:
+                    continue
 
-            # if opened for more than 'chute_timeout' duration already and finally closes, have this so that can start checking for prolonged opening if it opens again
-            # this is more for the case in which the chute is open for longer than 'chute_timeout', in which case should continue recording
-            if self.recorded and not self.open:
-                logger.info(
-                    f"Chute that has been opened for a long time has finally closed at {get_logging_time()}"
-                )
-                self.recorded = False
+                else: 
+                    # If chute was open and the duration of time it has been open has just exceeded chute_timeout, upload video evidence.  
+                    if time.time() > self.time_to_stop and self.recorded == False:
+                        self.frame_buffer.append(frame)
+                        box_info = bb_info(self.bbox_xyxy, 0)
+                        
+                        # Start another thread for uploading video, if server is enabled.
+                        if self.server_enabled:
+                            logger.info(self.open)
+                            t1 = threading.Thread(
+                                target=self._upload_evidence,
+                                args=(self.frame_buffer, box_info, self.open),
+                            )
+                            t1.start()
+                            
+                        # Continue in same thread for uploading video, if server is not enabled.    
+                        else:
+                            self._upload_evidence(
+                                self.frame_buffer, box_info, self.open
+                            )
+                
+                        self.recorded = True
+                        self.endtime_created = False
+                        self.frame_buffer = []
 
-    def _record_irresponsible(self):
-        """
-        Determines whether chute is being left open for a long time
-        and executes the appropriate actions
-        """
-
-        if self.open:
-            # just opened, so get the time which if the chute were to be opened up till then, then register a prolonged opening and upload the video evidence
-            if not self.is_stopping:
-                self.time_to_stop = time.time() + self.chute_timeout + 2
-                self.is_stopping = True
-            else:
-                # register the prolonged opening and upload the evidence
-                if time.time() > self.time_to_stop:
-                    box_info = bb_info(self.bbox_xyxy, 0)
-                    if self.server_enabled:
-                        logger.info(self.open)
-                        t1 = threading.Thread(
-                            target=self._upload_evidence,
-                            args=(self.frame_buffer, box_info, self.open),
-                        )
-                        t1.start()
+                    # If chute was open but the duration of time it has been open is still within chute_timeout, continue adding frames to buffer (in preparation for uploading video).
                     else:
-                        self._upload_evidence(
-                            self.frame_buffer, box_info, self.open
-                        )
-                    self.recorded = True
-                    self.recording = False
-                    self.is_stopping = False
+                        self.frame_buffer.append(frame)
+                
+            else:
+                # If chute that has been left open for a very long time (more than chute_timeout duration) has just been closed, reset all variables to original values.
+                if self.endtime_created == False and self.recorded == True:
+                    self.recorded = False
+                    self.endtime_created = False
                     self.frame_buffer = []
-        # if close before the time to upload evidence, then reset system
-        else:
-            logger.info(f"Chute has closed at {get_logging_time()}")
-            self.is_stopping = False
-            self.frame_buffer = []
-            self.recording = False
+                    logger.info(f"Chute that has been opened for a long time has finally closed at {get_logging_time()}")
+                
+                # If chute is "still closed", that is, the previous frame was still that of a closed chute, then don't do anything.  
+                elif self.endtime_created == False and self.recorded == False:
+                    continue
+                
+                else:
+                    # If chute has just been closed (within chute_timeout duration of being opened), then discard current frame buffer. 
+                    if time.time() < self.time_to_stop:
+                        self.frame_buffer = []
+                        self.endtime_created = False
+                        logger.info(f"Chute has closed at {get_logging_time()}")
 
+  
     def _send_frame(self, frame: np.ndarray):
         """
         Send the frame to remote host
