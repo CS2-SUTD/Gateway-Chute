@@ -1,6 +1,5 @@
 import multiprocessing
-# import tensorflow as tf # Use if non-linux
-import tflite_runtime.interpreter as tflite 
+import tensorflow as tf 
 import numpy as np
 from chute.Detector.Letterbox import LetterBox
 import cv2
@@ -23,8 +22,7 @@ class Detector:
             else int(kwargs["cpu_cores"])
         )
 
-        interpreter = tflite.Interpreter(kwargs["weights"], num_threads=num_threads)
-        # interpreter = tf.lite.Interpreter(kwargs["weights"], num_threads=num_threads) # Use if non-linux
+        interpreter = tf.lite.Interpreter(kwargs["weights"], num_threads=num_threads)
 
         self.input_shape = kwargs["input_shape"].split(",")
         self.input_shape = tuple([int(i) for i in self.input_shape])
@@ -72,8 +70,7 @@ class Detector:
         # Scale boxes
         output[:, :4] = self._scale_boxes(self.input_shape, output[:, :4], original_image.shape[:2])
 
-        # Send highest probability detection
-        return output[:1, :4], output[:1, 4], output[:1, 5]
+        return output[:, :4], output[:, 4], output[:, 5]
     
     def _pre_process(self, image: np.ndarray) -> np.ndarray:
         """
@@ -101,7 +98,7 @@ class Detector:
     def _run_inference(
             self,
             image: np.ndarray,
-            interpreter: tflite.Interpreter,
+            interpreter: tf.lite.Interpreter,
     ) -> np.ndarray:
         """
         Run inference on the image
@@ -182,7 +179,7 @@ class Detector:
         """
         
         max_nms = 30000
-        agnostic = False
+        agnostic = True
         max_wh = 7680
 
         output = np.zeros((0, 6 + nm), dtype=np.float32)
@@ -210,30 +207,36 @@ class Detector:
             # Filter the resulting array based on the condition conf_flat > conf_thres
             filtered_x = x[conf_flat > conf_thres]
 
-            n = filtered_x.shape[0]  # number of boxes
-
-            if not n:  # no boxes
+            if not filtered_x.shape[0]:
                 continue
-            if n > max_nms:  # excess boxes
-                # Sort x based on the 5th column in descending order
-                sorted_indices = np.argsort(x[:, 4])[::-1]
-                # Select the top max_nms rows based on the sorted indices
-                x = x[sorted_indices[:max_nms]]
+            
+            # Keep only the highest confidence bounding box for each class
+            unique_classes = np.unique(filtered_x[:, 5])
+            best_boxes = []
+            for cls in unique_classes:
+                cls_boxes = filtered_x[filtered_x[:, 5] == cls]
+                best_box = cls_boxes[np.argmax(cls_boxes[:, 4])]
+                best_boxes.append(best_box)
 
-            c = x[:, 5:6] * (0 if agnostic else max_wh)
-            boxes, scores = x[:, :4] + c, x[:, 4]  # boxes (offset by class), scores
+            best_boxes = np.array(best_boxes)
+            
+            if best_boxes.shape[0] > max_nms:  # excess boxes
+                sorted_indices = np.argsort(best_boxes[:, 4])[::-1]
+                best_boxes = best_boxes[sorted_indices[:max_nms]]
+
+            c = best_boxes[:, 5:6] * (0 if agnostic else max_wh)
+            boxes, scores = best_boxes[:, :4] + c, best_boxes[:, 4]  # boxes (offset by class), scores
 
             # Apply NMS using cv2.dnn.NMSBoxes function
             i = cv2.dnn.NMSBoxes(
-                boxes, scores, score_threshold=0.4, nms_threshold=iou_thres
+                boxes.tolist(), scores.tolist(), score_threshold=conf_thres, nms_threshold=iou_thres
             )
-            i = i[:max_det]  # limit detections
 
-            output = x[i]
+            if len(i) > 0:
+                i = np.array(i).reshape(-1)
+                output = np.vstack((output, best_boxes[i]))
 
         return output
-
-
 
     def _xywh2xyxy(self, x):
         """
