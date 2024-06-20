@@ -1,11 +1,13 @@
 import multiprocessing
-# import tensorflow as tf # Use if non-linux
-import tflite_runtime.interpreter as tflite 
 import numpy as np
 from chute.Detector.Letterbox import LetterBox
 import cv2
 from loguru import logger
-
+try:
+    from tflite_runtime.interpreter import Interpreter
+except ImportError:
+    import tensorflow as tf
+    Interpreter = tf.lite.Interpreter
 
 class Detector:
     """
@@ -23,7 +25,7 @@ class Detector:
             else int(kwargs["cpu_cores"])
         )
 
-        interpreter = tflite.Interpreter(kwargs["weights"], num_threads=num_threads)
+        interpreter = Interpreter(kwargs["weights"], num_threads=num_threads)
         # interpreter = tf.lite.Interpreter(kwargs["weights"], num_threads=num_threads) # Use if non-linux
 
         self.input_shape = kwargs["input_shape"].split(",")
@@ -101,7 +103,7 @@ class Detector:
     def _run_inference(
             self,
             image: np.ndarray,
-            interpreter: tflite.Interpreter,
+            interpreter,
     ) -> np.ndarray:
         """
         Run inference on the image
@@ -225,7 +227,7 @@ class Detector:
 
             # Apply NMS using cv2.dnn.NMSBoxes function
             i = cv2.dnn.NMSBoxes(
-                boxes, scores, score_threshold=0.4, nms_threshold=iou_thres
+                boxes, scores, score_threshold=conf_thres, nms_threshold=iou_thres
             )
             i = i[:max_det]  # limit detections
 
