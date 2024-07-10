@@ -57,6 +57,6 @@ The video clip from the time when the garbage was first opened will be saved, an
 
 Until the garbage chute is closed again, no more additional videos will be saved or uploaded to the server.
 
-## Benchmark
+## Benchmarks
 
 ![Benchmark Image](data/tflite_chute.png)
