@@ -18,10 +18,11 @@ This program has been tested in a Linux environment with python 3.10
 pip install -r requirements.txt
 ```
 
-Note: tflite-runtime Python wheels are pre-built and provided only for Linux. For non-Linux environments, either install the full TensorFlow package and modify `chute/Detector/Detector.py` accordingly or build the tflite-runtime package from source
+Note: tflite-runtime Python wheels are pre-built and provided only for Linux. For non-Linux environments, either install the full TensorFlow package or build the tflite-runtime package from source
 
-2. Run the command:
+2. Execute the program:
 
+#### Single-stream setup:
 ```
 python main.py [optional, -c config] [optional, -s source]
 
@@ -59,4 +60,4 @@ Until the garbage chute is closed again, no more additional videos will be saved
 
 ## Benchmarks
 
-![Benchmark Image](data/tflite_chute.png)
+![Benchmark Image](data/assets/tflite_chute.png)

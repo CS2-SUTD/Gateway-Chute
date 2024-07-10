@@ -8,4 +8,7 @@ data/*.tflite
 !data/best.tflite
 *.ini
 !config.ini
-config/
+config/*
+!config/config1.ini
+!config/config2.ini
+!config/config3.ini
