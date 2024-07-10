@@ -60,4 +60,4 @@ Until the garbage chute is closed again, no more additional videos will be saved
 
 ## Benchmarks
 
-![Benchmark Image](data/assets/tflite_chute.png)
+![Benchmark Image](data/assets/chute_benchmark.png)
