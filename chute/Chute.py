@@ -138,6 +138,7 @@ class Chute:
                     self.endtime_created = False
                     self.frame_buffer = []
                     logger.info(f"Chute that has been opened for a long time has finally closed at {get_logging_time()}")
+                    logger.info(f"Duration for which chute was left open is: {round(time.time() - self.time_to_stop + self.chute_timeout, 1)} seconds")
                 
                 # If chute is "still closed", that is, the previous frame was still that of a closed chute, then don't do anything.  
                 elif self.endtime_created == False and self.recorded == False:
