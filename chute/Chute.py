@@ -110,6 +110,7 @@ class Chute:
                 logger.info(
                     f"Chute that has been opened for a long time has finally closed at {get_logging_time()}"
                 )
+                logger.info(f"Duration for which chute was left open is: {round(time.time() - self.time_to_stop + self.chute_timeout, 1)} seconds")
                 self.recorded = False
 
     def _record_irresponsible(self):
