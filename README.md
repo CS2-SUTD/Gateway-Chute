@@ -1,6 +1,15 @@
 # Garbage Chute Edge Processing
 
-Program to receive stream, process on the edge and publish relevant results to the backend as part of the Garbage Chute Prolonged Opening Detection pipeline
+Program to receive stream, process on the edge and publish relevant results to the backend as part of the Garbage Chute Prolonged Opening Detection pipeline.
+
+## Table of Contents
+1. [Demo](#demo)
+2. [Getting Started](#getting-started)
+    - [Installation and Usage](#installation-and-usage)
+    - [Configuration](#configuration)
+3. [How it works](#how-it-works)
+4. [Benchmarks](#benchmarks)
+
 
 ## Demo
 
