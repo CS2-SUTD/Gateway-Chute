@@ -31,6 +31,8 @@ Note: tflite-runtime Python wheels are pre-built and provided only for Linux. Fo
 2. Execute the program:
 
 #### Single-stream setup:
+1. Modify the 'config.ini' file for any necessary cahnges.
+2. Run the command:
 ```
 python main.py [optional, -c config] [optional, -s source]
 
@@ -39,7 +41,7 @@ python main.py -c config.ini -s rtsp://0.0.0.0:0/stream
 ```
 
 #### Multi-stream setup
-1. Create the relevant config files for each stream (for organisation, keep them in a folder named `config`). Main changes to be made are:
+1. Modify the existing configuration files for each stream in the `config` folder. Ensure the following changes are made:
     - `cam_id`: should be unique
     - `cpu_cores`: should not be 0 when having multiple streams
     - `socket port`: should be unique
