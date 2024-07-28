@@ -31,7 +31,7 @@ Note: tflite-runtime Python wheels are pre-built and provided only for Linux. Fo
 2. Execute the program:
 
 #### Single-stream setup:
-1. Modify the 'config.ini' file for any necessary cahnges.
+1. Modify the 'config.ini' file for any necessary changes.
 2. Run the command:
 ```
 python main.py [optional, -c config] [optional, -s source]
