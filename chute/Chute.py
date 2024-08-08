@@ -223,9 +223,6 @@ class Chute:
         try:
             client.connect(self.mqtt_cfg["ip"], int(self.mqtt_cfg["port"]), 60)
             client.loop_start()
-            
-            print(f"Publishing message: {message_json}")  # Debug print
-            
             client.publish(
                 self.mqtt_cfg["topic"], message_json, qos=0
             )  # qos could be alter to 1 in the future
