@@ -42,6 +42,9 @@ class Chute:
         self.server_enabled: bool = bool(int(general_cfg["enable_server"]))
         self.chute_timeout: int = int(general_cfg["chute_timeout"])
         self.socket = self._get_socket()
+        self.open_time = None
+        self.close_time = None
+        self.duration = 0
 
     def start(self, source: str):
         """
@@ -69,6 +72,7 @@ class Chute:
         self.is_stopping = False
         self.cam = Camera(source)
         self.open: int = 0
+        self.duration = 0
         self.bbox_xyxy: BBxywh = None
 
         while True:
@@ -97,6 +101,7 @@ class Chute:
             if not self.recording and not self.recorded and self.open:
                 logger.info(f"Chute opened at {get_logging_time()}")
                 self.recording = True
+                self.open_time = time.time()
 
             # start picking up the frames for evidence in case it is a prolonged opening
             if self.recording:
@@ -110,7 +115,10 @@ class Chute:
                 logger.info(
                     f"Chute that has been opened for a long time has finally closed at {get_logging_time()}"
                 )
-                logger.info(f"Duration for which chute was left open is: {round(time.time() - self.time_to_stop + self.chute_timeout, 1)} seconds")
+                self.close_time = time.time()
+                self.duration = round(self.close_time - self.open_time, 1)
+                logger.info(f"Duration for which chute was left open is: {self.duration} seconds")
+                self._send_message(get_iso_time(), "path_to_video", self.bbox_xyxy, self.open)
                 self.recorded = False
 
     def _record_irresponsible(self):
@@ -203,7 +211,11 @@ class Chute:
             "Image": "Lab camera",
             "Video": "Lab camera",
             "Category": "VA",
-            "Metadata": {"State": self.CLASS_NAMES[state], "Box": Box_info},
+            "Metadata": {
+                "State": self.CLASS_NAMES[state],
+                # "Box": Box_info,
+                "DurationOpen": self.duration
+            },
         }
 
         message_json = json.dumps(message_dict)
