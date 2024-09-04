@@ -1,4 +1,4 @@
-from config.Chute import Chute
+from chute.Chute import Chute
 
 
 __all__ = ["Chute"]
